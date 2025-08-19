@@ -13,6 +13,25 @@ export const reportData = {
       clientesRecurrentesTotales: 324,
       periodoCompleto: 'Junio - Agosto 2025'
     },
+
+    // Categorización de ingresos por tipo
+    ingresosPorCategoria: {
+      junio: {
+        planes: 76820, // Planes regulares de 1, 4, 8, 12, 16, 20 clases
+        eventos: 2000, // Evento especial: Ludim Iván Martínez Díaz
+        articulos: 0
+      },
+      julio: {
+        planes: 114285, // Planes regulares
+        eventos: 14990, // Clases especiales Hot Barré, Hot Sculpt, etc.
+        articulos: 0
+      },
+      agosto: {
+        planes: 51920, // Planes regulares
+        eventos: 0, // No se identificaron eventos especiales claros
+        articulos: 0
+      }
+    },
   
     // Datos mensuales
     ingresosMensuales: [
@@ -200,6 +219,7 @@ export const reportData = {
       planes: reportData.planesPorMes[mesKey] || [],
       rangoFechas: reportData.rangosFechas[mesKey] || {},
       ingresos: reportData.ingresosMensuales.find(item => item.mes === mesCapitalized) || {},
+      ingresosPorCategoria: reportData.ingresosPorCategoria[mesKey] || { planes: 0, eventos: 0, articulos: 0 },
       clientes: {
         ...clientesMes,
         mes: mesCapitalized // Asegurar que tiene la propiedad mes
@@ -208,6 +228,38 @@ export const reportData = {
       ingresosMensuales: reportData.ingresosMensuales.filter(item => item.mes === mesCapitalized),
       clientesPorMes: clientesMes.mes ? [clientesMes] : [],
       trimestre: null // Indicador de que estamos en vista mensual
+    };
+  };
+
+  // Función para obtener resumen de ingresos por categoría del trimestre
+  export const getResumenIngresosTrimestre = () => {
+    const totalPlanes = 
+      reportData.ingresosPorCategoria.junio.planes +
+      reportData.ingresosPorCategoria.julio.planes +
+      reportData.ingresosPorCategoria.agosto.planes;
+    
+    const totalEventos = 
+      reportData.ingresosPorCategoria.junio.eventos +
+      reportData.ingresosPorCategoria.julio.eventos +
+      reportData.ingresosPorCategoria.agosto.eventos;
+    
+    const totalArticulos = 
+      reportData.ingresosPorCategoria.junio.articulos +
+      reportData.ingresosPorCategoria.julio.articulos +
+      reportData.ingresosPorCategoria.agosto.articulos;
+    
+    const total = totalPlanes + totalEventos + totalArticulos;
+    
+    return {
+      planes: totalPlanes,
+      eventos: totalEventos,
+      articulos: totalArticulos,
+      total: total,
+      porcentajes: {
+        planes: total > 0 ? ((totalPlanes / total) * 100).toFixed(1) : 0,
+        eventos: total > 0 ? ((totalEventos / total) * 100).toFixed(1) : 0,
+        articulos: total > 0 ? ((totalArticulos / total) * 100).toFixed(1) : 0
+      }
     };
   };
   
@@ -239,20 +291,20 @@ export const reportData = {
     return comparacion;
   };
   
-  // Colores para gráficos
+  // Colores para gráficos - Basados en la identidad de Comunal Studio
   export const chartColors = {
-    primary: '#3B82F6',
-    secondary: '#8B5CF6', 
-    accent: '#EF4444',
-    success: '#10B981',
-    warning: '#F59E0B',
-    info: '#06B6D4',
+    primary: '#494438',     // Marrón oscuro principal
+    secondary: '#B8AB9C',   // Beige/Marrón claro
+    accent: '#DDAEA8',      // Rosa palo
+    success: '#8A9A7A',     // Verde tierra (derivado)
+    warning: '#D4A574',     // Ocre (derivado)
+    info: '#9B9B9B',        // Gris neutro (derivado)
     gradient: [
-      'rgba(59, 130, 246, 0.8)',
-      'rgba(139, 92, 246, 0.8)',
-      'rgba(239, 68, 68, 0.8)',
-      'rgba(16, 185, 129, 0.8)',
-      'rgba(245, 158, 11, 0.8)',
-      'rgba(6, 182, 212, 0.8)'
+      'rgba(73, 68, 56, 0.8)',    // Marrón oscuro
+      'rgba(184, 171, 156, 0.8)', // Beige
+      'rgba(221, 174, 168, 0.8)', // Rosa palo
+      'rgba(138, 154, 122, 0.8)', // Verde tierra
+      'rgba(212, 165, 116, 0.8)', // Ocre
+      'rgba(155, 155, 155, 0.8)'  // Gris neutro
     ]
   };

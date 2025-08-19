@@ -119,12 +119,18 @@ const PlansChart = ({ data, selectedPeriod, selectedMonth }) => {
             const plan = context.label;
             let planData;
             
-            if (mes === 'junio') {
-              planData = data.planesPorMes.junio.find(p => p.plan === plan);
-            } else if (mes === 'julio') {
-              planData = data.planesPorMes.julio.find(p => p.plan === plan);
+            // En vista mensual, usar data.planes directamente
+            if (selectedPeriod === 'mensual') {
+              planData = data.planes?.find(p => p.plan === plan);
             } else {
-              planData = data.planesPorMes.agosto.find(p => p.plan === plan);
+              // En vista trimestral, usar planesPorMes
+              if (mes === 'junio') {
+                planData = data.planesPorMes?.junio?.find(p => p.plan === plan);
+              } else if (mes === 'julio') {
+                planData = data.planesPorMes?.julio?.find(p => p.plan === plan);
+              } else {
+                planData = data.planesPorMes?.agosto?.find(p => p.plan === plan);
+              }
             }
             
             return planData ? `Ventas: ${formatCurrency(planData.ventas)}` : '';

@@ -1,6 +1,7 @@
 import Head from 'next/head';
-import { useState } from 'react';
-import { BarChart3, TrendingUp, Calendar, ChevronDown, ArrowUpDown } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { BarChart3, TrendingUp, Calendar, ChevronDown, ArrowUpDown, LogOut, User } from 'lucide-react';
+import { useAuth } from '../hooks/useAuth';
 
 // Importar componentes
 import SummaryCards from '../components/SummaryCards';
@@ -9,11 +10,15 @@ import RetentionChart from '../components/RetentionChart';
 import PlansChart from '../components/PlansChart';
 import AttendanceChart from '../components/AttendanceChart';
 import TopClientsTable from '../components/TopClientsTable';
+import IncomeBreakdownChart from '../components/IncomeBreakdownChart';
 
 // Importar datos
-import { reportData, getDatosPorMes, compararMeses } from '../data/kpis';
+import { reportData, getDatosPorMes, compararMeses, getResumenIngresosTrimestre } from '../data/kpis';
 
 export default function Home() {
+  const { isAuthenticated, user, loading, logout, requireAuth } = useAuth();
+  const { isAuthenticated: authRequired, loading: authLoading } = requireAuth();
+  
   const [selectedPeriod, setSelectedPeriod] = useState('trimestre');
   const [selectedMonth, setSelectedMonth] = useState('Agosto');
   const [compareMonth, setCompareMonth] = useState('Julio');
@@ -22,43 +27,69 @@ export default function Home() {
   const meses = ['Junio', 'Julio', 'Agosto'];
   const datosActuales = selectedPeriod === 'trimestre' ? reportData : getDatosPorMes(selectedMonth);
   const comparacionDatos = showComparison ? compararMeses(selectedMonth, compareMonth) : null;
+  const resumenIngresosTrimestre = getResumenIngresosTrimestre();
+
+  // Mostrar loading mientras se verifica la autenticación
+  if (authLoading) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+          <p className="text-gray-600">Verificando acceso...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Si no está autenticado, no mostrar el dashboard (el hook redirigirá al login)
+  if (!isAuthenticated) {
+    return null;
+  }
 
 
   return (
     <>
       <Head>
-        <title>KPIs Estudio de Fitness - Q3 2025</title>
-        <meta name="description" content="Dashboard de KPIs para estudio de fitness - Trimestre Q3 2025" />
+        <title>Informes de KPIs Comunal - Q3 2025</title>
+        <meta name="description" content="Dashboard de KPIs para Comunal Studio - Trimestre Q3 2025" />
         <meta name="viewport" content="width=device-width, initial-scale=1" />
         <link rel="icon" href="/favicon.ico" />
       </Head>
 
-      <main className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
+      <main className="min-h-screen" style={{background: 'linear-gradient(to bottom right, #FAF8F4, #EDEDED)'}}>
         {/* Header */}
         <div className="bg-white shadow-sm border-b border-gray-200">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div className="flex items-center justify-between h-16">
               <div className="flex items-center space-x-3">
-                <div className="bg-gradient-to-r from-blue-600 to-purple-600 p-2 rounded-lg">
+                <div className="p-2 rounded-lg" style={{backgroundColor: '#494438'}}>
                   <BarChart3 className="w-6 h-6 text-white" />
                 </div>
                 <div>
-                  <h1 className="text-xl font-bold text-gray-900">
-                    KPIs Estudio de Fitness
+                  <h1 className="text-xl font-bold" style={{color: '#494438'}}>
+                    Informes de KPIs Comunal
                   </h1>
-                  <p className="text-sm text-gray-600">
+                  <p className="text-sm" style={{color: '#B8AB9C'}}>
                     Trimestre Q3 2025 • Junio - Agosto
                   </p>
                 </div>
               </div>
               
               <div className="flex items-center space-x-4">
+                {/* Usuario logueado */}
+                <div className="flex items-center space-x-2 text-sm" style={{color: '#B8AB9C'}}>
+                  <User className="w-4 h-4" />
+                  <span>Bienvenido, {user?.username}</span>
+                </div>
+                
                 {/* Selector de período/mes */}
                 <div className="flex items-center space-x-2">
                   <select
                     value={selectedPeriod}
                     onChange={(e) => setSelectedPeriod(e.target.value)}
-                    className="bg-white border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="bg-white border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2"
+                    style={{'--tw-ring-color': '#494438'}}
+                    onFocus={(e) => e.target.style.borderColor = '#494438'}
                   >
                     <option value="trimestre">Trimestre Completo</option>
                     <option value="mensual">Por Mes</option>
@@ -69,7 +100,9 @@ export default function Home() {
                       <select
                         value={selectedMonth}
                         onChange={(e) => setSelectedMonth(e.target.value)}
-                        className="bg-white border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        className="bg-white border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2"
+                    style={{'--tw-ring-color': '#494438'}}
+                    onFocus={(e) => e.target.style.borderColor = '#494438'}
                       >
                         {meses.map(mes => (
                           <option key={mes} value={mes}>{mes}</option>
@@ -78,11 +111,16 @@ export default function Home() {
                       
                       <button
                         onClick={() => setShowComparison(!showComparison)}
-                        className={`flex items-center space-x-1 px-3 py-2 rounded-lg text-sm transition-colors ${
+                        className={`flex items-center space-x-1 px-3 py-2 rounded-lg text-sm transition-colors border ${
                           showComparison 
-                            ? 'bg-purple-100 text-purple-700 border border-purple-300' 
-                            : 'bg-gray-100 text-gray-600 border border-gray-300'
+                            ? 'border-opacity-50' 
+                            : 'bg-gray-100 text-gray-600 border-gray-300'
                         }`}
+                        style={{
+                          backgroundColor: showComparison ? '#DDAEA8' : '#F3F4F6',
+                          color: showComparison ? '#494438' : '#6B7280',
+                          borderColor: showComparison ? '#DDAEA8' : '#D1D5DB'
+                        }}
                       >
                         <ArrowUpDown className="w-4 h-4" />
                         <span>Comparar</span>
@@ -92,7 +130,14 @@ export default function Home() {
                         <select
                           value={compareMonth}
                           onChange={(e) => setCompareMonth(e.target.value)}
-                          className="bg-purple-50 border border-purple-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-purple-500"
+                          className="rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 border"
+                          style={{
+                            backgroundColor: '#DDAEA8',
+                            borderColor: '#DDAEA8',
+                            color: '#494438',
+                            '--tw-ring-color': '#494438'
+                          }}
+                          onFocus={(e) => e.target.style.borderColor = '#494438'}
                         >
                           {meses.filter(mes => mes !== selectedMonth).map(mes => (
                             <option key={mes} value={mes}>vs {mes}</option>
@@ -103,7 +148,7 @@ export default function Home() {
                   )}
                 </div>
 
-                <div className="flex items-center space-x-2 text-sm text-gray-600">
+                <div className="flex items-center space-x-2 text-sm" style={{color: '#B8AB9C'}}>
                   <Calendar className="w-4 h-4" />
                   <span>
                     {selectedPeriod === 'trimestre' 
@@ -112,6 +157,17 @@ export default function Home() {
                     }
                   </span>
                 </div>
+
+                {/* Botón de logout */}
+                <button
+                  onClick={logout}
+                  className="flex items-center space-x-2 px-3 py-2 text-sm rounded-lg transition-colors hover:opacity-80"
+                  style={{color: '#DDAEA8', backgroundColor: 'rgba(221, 174, 168, 0.1)'}}
+                  title="Cerrar sesión"
+                >
+                  <LogOut className="w-4 h-4" />
+                  <span>Salir</span>
+                </button>
               </div>
             </div>
           </div>
@@ -127,7 +183,7 @@ export default function Home() {
             </h2>
             <p className="text-lg text-gray-600 max-w-3xl mx-auto">
               {selectedPeriod === 'trimestre' 
-                ? 'Análisis completo de KPIs del estudio de fitness para el trimestre Q3 2025. Datos procesados de junio, julio y agosto con insights para la toma de decisiones.'
+                ? 'Análisis completo de KPIs de Comunal Studio para el trimestre Q3 2025. Datos procesados de junio, julio y agosto con insights para la toma de decisiones.'
                 : `Análisis detallado de KPIs para ${selectedMonth} 2025. Período: ${datosActuales.rangoFechas?.inicio} - ${datosActuales.rangoFechas?.fin} (${datosActuales.rangoFechas?.dias} días).`
               }
             </p>
@@ -180,6 +236,16 @@ export default function Home() {
             <div className="xl:col-span-1">
               <RetentionChart data={selectedPeriod === 'trimestre' ? reportData : datosActuales} />
             </div>
+          </div>
+
+          {/* Income Breakdown Chart */}
+          <div className="mb-8">
+            <IncomeBreakdownChart 
+              data={datosActuales} 
+              selectedPeriod={selectedPeriod} 
+              selectedMonth={selectedMonth}
+              resumenTrimestre={resumenIngresosTrimestre}
+            />
           </div>
 
           {/* Plans Chart */}
@@ -246,7 +312,7 @@ export default function Home() {
           <div className="text-center mt-12 py-6 border-t border-gray-200">
             <p className="text-gray-500 text-sm">
               Reporte generado automáticamente • {new Date().toLocaleDateString('es-MX')} • 
-              <span className="font-medium"> Estudio de Fitness Dashboard</span>
+              <span className="font-medium"> Comunal Studio Dashboard</span>
             </p>
           </div>
         </div>
